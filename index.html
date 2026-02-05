@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>今天吃什么？</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel-2: rgba(255, 255, 255, 0.09);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.66);
+        --line: rgba(255, 255, 255, 0.12);
+        --brand: #7c3aed;
+        --brand-2: #22c55e;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+        --shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+        --radius: 16px;
+        --radius-sm: 12px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+          "Segoe UI Emoji";
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: radial-gradient(1200px 800px at 20% 10%, rgba(124, 58, 237, 0.35), transparent 55%),
+          radial-gradient(900px 650px at 85% 30%, rgba(34, 197, 94, 0.22), transparent 60%),
+          radial-gradient(800px 700px at 55% 95%, rgba(59, 130, 246, 0.18), transparent 55%), var(--bg);
+        color: var(--text);
+        overflow: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 22px 16px 22px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 0.2px;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .grid {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: start;
+      }
+      .grid > .panel {
+        width: 100%;
+      }
+      .dish-panel {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .dish-panel .panel-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .dish-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        margin-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .dish-scroll .table {
+        margin-top: 0;
+      }
+      .dish-scroll::-webkit-scrollbar {
+        width: 10px;
+      }
+      .dish-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        border: 2px solid rgba(0, 0, 0, 0.3);
+      }
+      .dish-scroll::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .panel {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .panel-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .panel-head h2 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: 0.2px;
+      }
+      .panel-body {
+        padding: 16px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 10px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.28);
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn.primary {
+        border-color: rgba(124, 58, 237, 0.45);
+        background: rgba(124, 58, 237, 0.22);
+      }
+      .btn.success {
+        border-color: rgba(34, 197, 94, 0.45);
+        background: rgba(34, 197, 94, 0.18);
+      }
+      .btn.danger {
+        border-color: rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.16);
+      }
+      .btn.ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .result-wrap {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      @media (max-width: 650px) {
+        .result-wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+      .result-card {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.18);
+        padding: 14px 14px 12px;
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .result-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .result-value {
+        font-size: 20px;
+        line-height: 1.2;
+        font-weight: 680;
+        letter-spacing: 0.2px;
+        word-break: break-word;
+      }
+      .result-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pill {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+      @media (max-width: 650px) {
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+      .input {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 12px;
+        outline: none;
+        font-size: 13px;
+      }
+      .input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .list-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stats {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .table th,
+      .table td {
+        border-top: 1px solid var(--line);
+        padding: 10px 8px;
+        vertical-align: middle;
+      }
+      .table thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(14, 20, 35, 0.92);
+        backdrop-filter: blur(8px);
+        z-index: 1;
+      }
+      .table th {
+        text-align: left;
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .table td.num {
+        width: 52px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .table td.op {
+        width: 96px;
+        text-align: right;
+      }
+      .mini {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        max-width: min(560px, calc(100vw - 24px));
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.62);
+        color: var(--text);
+        box-shadow: var(--shadow);
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease, transform 180ms ease;
+        transform-origin: center;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-4px);
+      }
+      dialog {
+        width: min(760px, calc(100vw - 24px));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(14, 20, 35, 0.92);
+        box-shadow: var(--shadow);
+        color: var(--text);
+        padding: 0;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.55);
+      }
+      .dialog-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .dialog-head strong {
+        font-size: 14px;
+        letter-spacing: 0.2px;
+      }
+      .dialog-body {
+        padding: 14px 16px 16px;
+      }
+      .textarea {
+        width: 100%;
+        min-height: 240px;
+        resize: vertical;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.55;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text);
+        padding: 12px;
+        outline: none;
+      }
+      .kbd {
+        font-family: var(--mono);
+        font-size: 11px;
+        border: 1px solid var(--line);
+        border-bottom-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2px 6px;
+        border-radius: 8px;
+        color: var(--muted);
+      }
+      .spin {
+        animation: pulse 650ms ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0% {
+          filter: saturate(1);
+          transform: translateY(0);
+        }
+        50% {
+          filter: saturate(1.35);
+          transform: translateY(-1px);
+        }
+        100% {
+          filter: saturate(1);
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>今天吃什么？</h1>
+          <div class="subtitle">抽奖决定今天吃什么；自带 50 个默认菜名，可编辑；支持一连抽/三连抽</div>
+        </div>
+        <div class="subtitle">快捷键：<span class="kbd">Enter</span> 一连抽，<span class="kbd">Shift</span>+<span class="kbd">Enter</span> 三连抽</div>
+      </header>
+
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>抽取结果</h2>
+            <div class="actions">
+              <button id="btnDraw1" class="btn primary">一连抽</button>
+              <button id="btnDraw3" class="btn success">三连抽</button>
+              <button id="btnCopy" class="btn ghost" title="复制结果">复制</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="resultWrap" class="result-wrap" aria-live="polite"></div>
+            <div class="result-meta">
+              <div id="resultInfo">准备就绪</div>
+              <div class="pill" id="dishCountPill">0 道菜</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel dish-panel">
+          <div class="panel-head">
+            <h2>菜名库</h2>
+            <div class="actions">
+              <button id="btnBulk" class="btn">批量编辑</button>
+              <button id="btnReset" class="btn danger" title="恢复默认50道">恢复默认</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <input id="newDishInput" class="input" placeholder="新增一个菜名，例如：番茄炒蛋" maxlength="40" />
+              <div class="actions" style="justify-content: flex-end">
+                <button id="btnAdd" class="btn">添加</button>
+                <button id="btnRandomFill" class="btn" title="从现有菜里随机补充一个空项">随机补空</button>
+              </div>
+            </div>
+            <div style="height: 10px"></div>
+            <div class="list-head">
+              <input id="searchInput" class="input" placeholder="搜索菜名（实时过滤）" />
+              <div class="stats">
+                <span id="statsText">0 条</span>
+                <span class="pill" id="storagePill">本地保存</span>
+              </div>
+            </div>
+            <div id="dishScroll" class="dish-scroll" aria-label="菜名滚动区域">
+              <table class="table" aria-label="菜名列表">
+                <thead>
+                  <tr>
+                    <th style="width: 52px">#</th>
+                    <th>菜名（直接编辑）</th>
+                    <th style="width: 96px; text-align: right">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="dishTbody"></tbody>
+              </table>
+              <div class="muted" style="margin: 10px 0 0">
+                提示：编辑后自动保存；支持重复项自动去重；空白行会被忽略
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <dialog id="bulkDialog">
+      <div class="dialog-head">
+        <strong>批量编辑菜名</strong>
+        <div class="actions">
+          <button id="btnBulkClose" class="btn ghost">关闭</button>
+        </div>
+      </div>
+      <div class="dialog-body">
+        <div class="muted" style="margin-bottom: 10px">每行一个菜名；会自动去掉空行、前后空格、重复项。</div>
+        <textarea id="bulkTextarea" class="textarea" spellcheck="false"></textarea>
+        <div style="height: 10px"></div>
+        <div class="actions" style="justify-content: space-between">
+          <button id="btnBulkToDefault" class="btn danger">填入默认50</button>
+          <div class="actions">
+            <button id="btnBulkApply" class="btn primary">应用并保存</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const STORAGE_KEY = "today_eat_what_dishes_v1";
+
+      const DEFAULT_DISHES = [
+        "番茄炒蛋",
+        "宫保鸡丁",
+        "鱼香肉丝",
+        "青椒肉丝",
+        "回锅肉",
+        "麻婆豆腐",
+        "红烧肉",
+        "可乐鸡翅",
+        "糖醋里脊",
+        "土豆炖牛肉",
+        "红烧茄子",
+        "地三鲜",
+        "酸辣土豆丝",
+        "清炒时蔬",
+        "蒜蓉西兰花",
+        "手撕包菜",
+        "干锅花菜",
+        "韭菜炒鸡蛋",
+        "西红柿牛腩",
+        "咖喱鸡",
+        "咖喱牛肉",
+        "黑椒牛柳",
+        "葱爆羊肉",
+        "酸菜鱼",
+        "水煮鱼",
+        "水煮肉片",
+        "辣子鸡",
+        "黄焖鸡",
+        "椒麻鸡",
+        "葱油鸡",
+        "蒜香排骨",
+        "糖醋排骨",
+        "红烧排骨",
+        "清蒸鲈鱼",
+        "葱姜蒸鱼",
+        "香煎三文鱼",
+        "虾仁滑蛋",
+        "油焖大虾",
+        "蒜蓉粉丝虾",
+        "蚝油生菜",
+        "尖椒炒豆干",
+        "青椒炒香肠",
+        "番茄牛肉",
+        "土豆烧鸡",
+        "莲藕排骨汤",
+        "冬瓜排骨汤",
+        "紫菜蛋花汤",
+        "酸辣汤",
+        "西葫芦炒蛋",
+        "蛋炒饭"
+      ];
+
+      const $ = (sel) => document.querySelector(sel);
+
+      const btnDraw1 = $("#btnDraw1");
+      const btnDraw3 = $("#btnDraw3");
+      const btnCopy = $("#btnCopy");
+      const resultWrap = $("#resultWrap");
+      const resultInfo = $("#resultInfo");
+      const dishCountPill = $("#dishCountPill");
+
+      const newDishInput = $("#newDishInput");
+      const btnAdd = $("#btnAdd");
+      const btnRandomFill = $("#btnRandomFill");
+      const searchInput = $("#searchInput");
+      const dishTbody = $("#dishTbody");
+      const dishScroll = $("#dishScroll");
+      const statsText = $("#statsText");
+
+      const btnBulk = $("#btnBulk");
+      const btnReset = $("#btnReset");
+      const bulkDialog = $("#bulkDialog");
+      const bulkTextarea = $("#bulkTextarea");
+      const btnBulkApply = $("#btnBulkApply");
+      const btnBulkClose = $("#btnBulkClose");
+      const btnBulkToDefault = $("#btnBulkToDefault");
+
+      const toast = $("#toast");
+
+      let dishes = [];
+      let lastResult = [];
+      let drawing = false;
+      let drawTimer = null;
+      let isComposing = false;
+
+      const normalize = (name) => String(name ?? "").trim().replace(/\s+/g, " ");
+
+      const uniq = (items) => {
+        const seen = new Set();
+        const out = [];
+        for (const raw of items) {
+          const v = normalize(raw);
+          if (!v) continue;
+          if (seen.has(v)) continue;
+          seen.add(v);
+          out.push(v);
+        }
+        return out;
+      };
+
+      const loadDishes = () => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return uniq(DEFAULT_DISHES);
+        try {
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return uniq(DEFAULT_DISHES);
+          const cleaned = uniq(parsed);
+          return cleaned.length ? cleaned : uniq(DEFAULT_DISHES);
+        } catch {
+          return uniq(DEFAULT_DISHES);
+        }
+      };
+
+      const saveDishes = () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(uniq(dishes)));
+      };
+
+      const showToast = (text) => {
+        toast.textContent = text;
+        toast.classList.add("show");
+        window.clearTimeout(showToast._t);
+        showToast._t = window.setTimeout(() => toast.classList.remove("show"), 1400);
+      };
+
+      const shuffleCopy = (arr) => {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      const pickUnique = (n) => {
+        const cleaned = uniq(dishes);
+        if (cleaned.length === 0) return [];
+        if (n <= 1) return [cleaned[Math.floor(Math.random() * cleaned.length)]];
+        if (cleaned.length <= n) return shuffleCopy(cleaned);
+        return shuffleCopy(cleaned).slice(0, n);
+      };
+
+      const renderResults = (items, spinning = false) => {
+        const slots = Math.max(3, items.length || 1);
+        const cards = [];
+        for (let i = 0; i < slots; i++) {
+          const label = `第${i + 1}个`;
+          const val = items[i] || (spinning ? "正在抽取…" : "—");
+          cards.push(
+            `<div class="result-card ${spinning ? "spin" : ""}">
+              <div class="result-label">${label}</div>
+              <div class="result-value">${escapeHtml(val)}</div>
+            </div>`
+          );
+        }
+        resultWrap.innerHTML = cards.join("");
+      };
+
+      const escapeHtml = (s) => {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      };
+
+      const updateStats = () => {
+        const total = uniq(dishes).length;
+        const q = normalize(searchInput.value).toLowerCase();
+        const shown = uniq(dishes).filter((d) => d.toLowerCase().includes(q)).length;
+        statsText.textContent = `${shown} / ${total} 条`;
+        dishCountPill.textContent = `${total} 道菜`;
+        btnDraw1.disabled = total === 0 || drawing;
+        btnDraw3.disabled = total === 0 || drawing;
+      };
+
+      const renderDishList = () => {
+        const cleaned = uniq(dishes);
+        const q = normalize(searchInput.value).toLowerCase();
+        const filtered = q ? cleaned.filter((d) => d.toLowerCase().includes(q)) : cleaned;
+        dishTbody.innerHTML = filtered
+          .map(
+            (name, idx) => `
+              <tr data-name="${escapeHtml(name)}">
+                <td class="num">${String(idx + 1).padStart(2, "0")}</td>
+                <td>
+                  <input class="input dish-edit" value="${escapeHtml(name)}" maxlength="40" />
+                </td>
+                <td class="op">
+                  <button class="btn mini danger dish-del">删除</button>
+                </td>
+              </tr>
+            `
+          )
+          .join("");
+        updateStats();
+      };
+
+      const replaceAllDishes = (newList) => {
+        dishes = uniq(newList);
+        saveDishes();
+        renderDishList();
+        updateStats();
+      };
+
+      const stopDrawing = () => {
+        drawing = false;
+        window.clearInterval(drawTimer);
+        drawTimer = null;
+        btnDraw1.disabled = uniq(dishes).length === 0;
+        btnDraw3.disabled = uniq(dishes).length === 0;
+      };
+
+      const draw = async (n) => {
+        if (drawing) return;
+        const total = uniq(dishes).length;
+        if (total === 0) {
+          showToast("菜名库为空，先添加一些吧");
+          return;
+        }
+        drawing = true;
+        btnDraw1.disabled = true;
+        btnDraw3.disabled = true;
+
+        const startedAt = Date.now();
+        resultInfo.textContent = "抽取中…";
+        const slots = n === 3 ? 3 : 1;
+        const tmp = new Array(slots).fill("正在抽取…");
+        renderResults(tmp, true);
+
+        const pool = uniq(dishes);
+        const durationMs = 1100;
+        const intervalMs = 85;
+        drawTimer = window.setInterval(() => {
+          const rolling = [];
+          for (let i = 0; i < slots; i++) {
+            rolling.push(pool[Math.floor(Math.random() * pool.length)]);
+          }
+          renderResults(rolling, true);
+        }, intervalMs);
+
+        await new Promise((r) => window.setTimeout(r, durationMs));
+        stopDrawing();
+
+        const picked = pickUnique(slots);
+        lastResult = picked;
+        renderResults(picked, false);
+        const cost = Date.now() - startedAt;
+        resultInfo.textContent = `完成：${slots === 1 ? "一连抽" : "三连抽"}（${(cost / 1000).toFixed(2)}s）`;
+      };
+
+      const ensureSomeDishes = () => {
+        dishes = loadDishes();
+        saveDishes();
+      };
+
+      btnAdd.addEventListener("click", () => {
+        const v = normalize(newDishInput.value);
+        if (!v) {
+          newDishInput.focus();
+          showToast("请输入菜名");
+          return;
+        }
+        dishes = uniq([...dishes, v]);
+        saveDishes();
+        newDishInput.value = "";
+        searchInput.value = "";
+        renderDishList();
+        if (dishScroll) dishScroll.scrollTop = dishScroll.scrollHeight;
+        showToast("已添加并保存");
+      });
+
+      newDishInput.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        if (isComposing) return;
+        btnAdd.click();
+      });
+      newDishInput.addEventListener("compositionstart", () => {
+        isComposing = true;
+      });
+      newDishInput.addEventListener("compositionend", () => {
+        isComposing = false;
+      });
+
+      btnRandomFill.addEventListener("click", () => {
+        const cleaned = uniq(dishes);
+        if (!cleaned.length) {
+          showToast("菜名库为空");
+          return;
+        }
+        const v = cleaned[Math.floor(Math.random() * cleaned.length)];
+        newDishInput.value = v;
+        newDishInput.focus();
+        newDishInput.select();
+        showToast("已随机填入一个菜名");
+      });
+
+      searchInput.addEventListener("input", () => {
+        renderDishList();
+      });
+
+      dishTbody.addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".dish-del");
+        if (!delBtn) return;
+        const tr = delBtn.closest("tr");
+        const name = tr?.getAttribute("data-name");
+        if (!name) return;
+        dishes = uniq(dishes).filter((d) => d !== name);
+        saveDishes();
+        renderDishList();
+        showToast("已删除");
+      });
+
+      dishTbody.addEventListener("input", (e) => {
+        const input = e.target.closest(".dish-edit");
+        if (!input) return;
+        const tr = input.closest("tr");
+        const prevName = tr?.getAttribute("data-name");
+        const nextName = normalize(input.value);
+        if (!prevName) return;
+        const base = uniq(dishes).filter((d) => d !== prevName);
+        if (nextName) base.push(nextName);
+        dishes = uniq(base);
+        saveDishes();
+        renderDishList();
+      });
+
+      btnDraw1.addEventListener("click", () => draw(1));
+      btnDraw3.addEventListener("click", () => draw(3));
+
+      btnCopy.addEventListener("click", async () => {
+        const text = lastResult.length ? lastResult.join(" / ") : "—";
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("已复制结果");
+        } catch {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          showToast("已复制结果");
+        }
+      });
+
+      btnReset.addEventListener("click", () => {
+        replaceAllDishes(DEFAULT_DISHES);
+        showToast("已恢复默认50道");
+      });
+
+      btnBulk.addEventListener("click", () => {
+        const cleaned = uniq(dishes);
+        bulkTextarea.value = cleaned.join("\n");
+        bulkDialog.showModal();
+        bulkTextarea.focus();
+      });
+
+      btnBulkClose.addEventListener("click", () => bulkDialog.close());
+
+      btnBulkToDefault.addEventListener("click", () => {
+        bulkTextarea.value = uniq(DEFAULT_DISHES).join("\n");
+        bulkTextarea.focus();
+      });
+
+      btnBulkApply.addEventListener("click", () => {
+        const lines = bulkTextarea.value.split(/\r?\n/);
+        const next = uniq(lines);
+        if (!next.length) {
+          showToast("至少保留一个菜名");
+          return;
+        }
+        replaceAllDishes(next);
+        bulkDialog.close();
+        showToast("已应用并保存");
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        if (bulkDialog.open) return;
+        if (document.activeElement?.classList?.contains("dish-edit")) return;
+        if (document.activeElement === newDishInput) return;
+        if (e.shiftKey) {
+          e.preventDefault();
+          draw(3);
+          return;
+        }
+        e.preventDefault();
+        draw(1);
+      });
+
+      ensureSomeDishes();
+      renderDishList();
+      renderResults(["点击「一连抽」或「三连抽」"], false);
+      updateStats();
+    </script>
+  </body>
+</html>
